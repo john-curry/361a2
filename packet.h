@@ -4,7 +4,7 @@
 
 class packet { 
   public:
-    int port;  
+    int port; 
 };
 
 #endif
