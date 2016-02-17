@@ -7,7 +7,15 @@ int main(int argc, char **argv) {
   packet p;
   p.port = 32;
   s0f0 s1;
-  connection conn(s1);
-  conn.recv_packet(p);
+  s1f0 s2;
+  vector<connection*> conns;
+  conns.push_back(new connection(&s2));
+  conns.push_back(new connection(&s1));
+  for (auto c: conns) {
+    c->recv_packet(p);
+  }
+  for (auto c: conns) {
+    c->recv_packet(p);
+  }
   return 0;
 }
