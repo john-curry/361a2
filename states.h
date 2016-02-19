@@ -3,21 +3,21 @@
 #include "connection.h"
 class s0f0: public connection_state {
   public: 
-    void recv_packet(const packet p, connection * c) {
+    void recv_packet( packet p, connection * c) {
       std::cout << "Recieved packet in state s0f0" << std::endl;
     };
 };
 
 class s1f0: public connection_state {
   public:
-    void recv_packet(const packet p, connection * c) {
+    void recv_packet( packet p, connection * c) {
       std::cout << "Recieved packet in state s1f0" << std::endl;
       c->change_state(std::make_shared<s0f0>());
     };
 };
 
 class s2f0: public connection_state {
-    void recv_packet(const packet p, connection * c) {
+    void recv_packet( packet p, connection * c) {
       std::cout << "Recieved packet in state s2f0" << std::endl;
       c->change_state(std::make_shared<s1f0>());
     };
