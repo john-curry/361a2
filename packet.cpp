@@ -46,10 +46,12 @@ packet::packet(const u_char * p, struct timeval ts, unsigned int cap_len) {
         cerr << "Captured packet too small: tcphdr." << endl;
       } else {
         // rip data out of the tcp header
-        this->sport   = mtcp->th_sport; 
-        this->dport   = mtcp->th_dport; 
+
+        this->sport   = short_swap(mtcp->th_sport); 
+        this->dport   = short_swap(mtcp->th_dport); 
         this->ack_num = mtcp->th_ack;
         this->seq_num = mtcp->th_seq;
+        this->flags   = std::bitset<8>((int)mtcp->th_flags);
 
         // jump over the tcp header
         p += tcp_header_length;
@@ -98,31 +100,36 @@ u_short packet::src_port() const {
  return sport;
 }
 
-bool packet::syn() const {
-  return flags|TH_SYN;
+bool packet::fin() const {
+  return (bool)flags[0];
 }
 
-bool packet::fin() const {
-  return flags|TH_FIN;
+bool packet::syn() const {
+  return (bool)flags[1];
 }
 
 bool packet::rst() const {
-  return flags|TH_RST;
+  return (bool)flags[2];
 }
 
-tcp_seq packet::ack() const {
+bool packet::ack() const {
+  return (bool)flags[4];
+}
+
+tcp_seq packet::ack_number() const {
   return ack_num;
 }
 
-tcp_seq packet::seq() const {
+tcp_seq packet::seq_number() const {
   return seq_num;
 }
 
 std::ostream& operator<<(std::ostream& os, const packet& p) {
-  os << " src_port: " << (unsigned int) p.src_port() 
-     << " dst_port: " << (unsigned int) p.dst_port() 
+  os << " src_port: " << p.src_port() 
+     << " dst_port: " << p.dst_port() 
      << " src_addr: " << p.src_addr() 
      << " dst_addr: " << p.dst_addr()
+     << " flags: " << p.flags
      << " ack: " << p.ack()
      << " syn: " << p.syn()
      << " fin: " << p.fin()
@@ -131,4 +138,19 @@ std::ostream& operator<<(std::ostream& os, const packet& p) {
      << " tcp_hdr_len: " << (unsigned int)p.tcp_hdr_len
      << " completed: " << p.complete();
   return os;
+}
+
+u_short short_swap( u_short s ) {
+  unsigned char b1, b2;
+  
+  b1 = s & 255;
+  b2 = (s >> 8) & 255;
+
+  return (b1 << 8) + b2;
+}
+void ConvertToBinary(int n) {
+  if (n / 2 != 0) {
+  ConvertToBinary(n / 2);
+  }
+  printf("%d", n % 2);
 }

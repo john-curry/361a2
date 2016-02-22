@@ -36,12 +36,7 @@ int main(int argc, char **argv) {
   while ((mpacket = pcap_next(pcap, &header)) != NULL) {
     auto new_packet = packet(mpacket, header.ts, header.caplen);
     bool new_connection = true;
-    for (auto c: conns) {
-      //if (c->check_packet(new_packet) && !new_packet.syn()) {
-      //  new_connection = false;
-      //}
-    }
-    if (new_connection) {
+    if (new_packet.rst()) {
       cout << new_packet << endl;
       conns.push_back(new connection(new_packet));
     }

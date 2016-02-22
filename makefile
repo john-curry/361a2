@@ -19,7 +19,7 @@ $(OBJS): $(FILES) $(HEADERS)
 clean:
 	rm $(OUT) *.o
 
-run: 
+run: $(OUT)
 	./$(OUT) $(ARGS)
 
 debug:

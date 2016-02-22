@@ -9,11 +9,14 @@
 #include <string>
 #include <cstring>
 #include <iostream>
+#include <bitset>
 #include <stdexcept>
 // the wonderful power of being able to store unsigned chars in an object
 // say goodbye to memcpy and strlen!!
 
 typedef std::basic_string<u_char> ustring;
+typedef std::bitset<4> short_bit;
+typedef std::bitset<8> l_short_bit;
 
 class bad_packet_error : public std::exception {
   public:
@@ -33,8 +36,9 @@ class packet {
     bool syn() const;
     bool fin() const;
     bool rst() const;
-    tcp_seq ack() const;
-    tcp_seq seq() const;
+    bool ack() const;
+    tcp_seq ack_number() const;
+    tcp_seq seq_number() const;
     bool complete() const { return completed; }
     u_short src_port() const;
     u_short dst_port() const;
@@ -47,11 +51,11 @@ class packet {
   private:
     ustring p_string; // string varient of the packet
     ustring data; // string varient of the data
-
     unsigned int capture_length; // length of packet
     std::string saddr; // ip addresses
     std::string daddr;
-    u_char flags; // tcp flags
+    l_short_bit flags;
+    //u_char flags; // tcp flags
     u_short sport; // port numbers
     u_short dport;
     u_short win; // window size
@@ -64,5 +68,7 @@ class packet {
     bool too_short(unsigned int length); // packet length check
 };
 std::ostream& operator<<(std::ostream& os, const packet& p);
+void ConvertToBinary(int n);
 
+u_short short_swap( u_short s );
 #endif
