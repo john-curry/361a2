@@ -2,15 +2,17 @@
 #include <cassert>
 packet::packet(const u_char * p, struct timeval ts, unsigned int cap_len) {
   using namespace std;
-  this->completed = false;
 
   struct ip *mip;
   struct tcphdr *mtcp;
+
   unsigned int eth_header_length = sizeof(struct ether_header); 
   unsigned int ip_header_length;
   unsigned int tcp_header_length;
-  this->p_string = ustring(p);
 
+  this->p_string = ustring(p);
+  this->time_stamp_sec = (time_t)ts.tv_sec;
+  this->time_stamp_milli = ts.tv_usec;
   this->capture_length = cap_len;
 
   if (too_short(eth_header_length)) {
@@ -46,11 +48,11 @@ packet::packet(const u_char * p, struct timeval ts, unsigned int cap_len) {
         cerr << "Captured packet too small: tcphdr." << endl;
       } else {
         // rip data out of the tcp header
-
+        // TODO: this is converting big endian to little endian. test this in the lab to see if it still needs swapping
         this->sport   = short_swap(mtcp->th_sport); 
         this->dport   = short_swap(mtcp->th_dport); 
-        this->ack_num = mtcp->th_ack;
-        this->seq_num = mtcp->th_seq;
+        this->ack_num = short_swap(mtcp->th_ack);
+        this->seq_num = short_swap(mtcp->th_seq);
         this->flags   = std::bitset<8>((int)mtcp->th_flags);
 
         // jump over the tcp header
@@ -62,6 +64,7 @@ packet::packet(const u_char * p, struct timeval ts, unsigned int cap_len) {
         } else {
           this->has_data = true;
           this->data = ustring(data);
+          this->d_size = cap_len;
         }
         // packet is not malformed in any way
         this->completed = true;
@@ -124,18 +127,29 @@ tcp_seq packet::seq_number() const {
   return seq_num;
 }
 
+time_t packet::ts_sec() const { 
+  return time_stamp_sec;
+}
+
+suseconds_t packet::ts_milli() const { 
+  return time_stamp_milli;
+}
+
+unsigned int packet::data_size() const { 
+  return this->d_size;
+}
+
 std::ostream& operator<<(std::ostream& os, const packet& p) {
   os << " src_port: " << p.src_port() 
      << " dst_port: " << p.dst_port() 
      << " src_addr: " << p.src_addr() 
      << " dst_addr: " << p.dst_addr()
-     << " flags: " << p.flags
+     << " ack_num: " << p.ack_num
+     << " seq_num: " << p.seq_num
      << " ack: " << p.ack()
      << " syn: " << p.syn()
      << " fin: " << p.fin()
      << " rst: " << p.rst()
-     << " ip_hdr_len: " << (unsigned int)p.ip_hdr_len
-     << " tcp_hdr_len: " << (unsigned int)p.tcp_hdr_len
      << " completed: " << p.complete();
   return os;
 }

@@ -1,4 +1,3 @@
-#include "states.h"
 #include "connection.h"
 #include "packet.h"
 #include <cassert>
@@ -12,7 +11,6 @@ int main(int argc, char **argv) {
   struct pcap_pkthdr header;
   struct bpf_program fp;
   char filter_exp[] = "tcp and ip";
-  vector<connection*> conns;
   //bpf_u_int32 mask;   /* The netmask of our sniffing device */
   //bpf_u_int32 net;   /* The IP of our sniffing device */
   
@@ -33,14 +31,35 @@ int main(int argc, char **argv) {
     cout << "Could not install filter: " << filter_exp << pcap_geterr(pcap) << endl;
   }
   
+  vector<connection*> conns;
+  int resets = 0;
+  //connection::capture_start = -1;
+
   while ((mpacket = pcap_next(pcap, &header)) != NULL) {
     auto new_packet = packet(mpacket, header.ts, header.caplen);
-    bool new_connection = true;
-    if (new_packet.rst()) {
-      cout << new_packet << endl;
+
+    if (global_hack::capture_start < 0) {
+      global_hack::capture_start = 
+        new_packet.ts_milli() + new_packet.ts_sec()*1000000;
+    }
+
+    if (new_packet.syn() && !new_packet.ack()) {
       conns.push_back(new connection(new_packet));
+    } else if (new_packet.rst()) {
+      resets++;
+      conns.push_back(new connection(new_packet));  
+    } else {
+      for (auto c: conns) {
+        if (c->check_packet(new_packet)) {
+          c->recv_packet(new_packet);
+        }
+      }
     }
   }
-  cout << "Number of connections: " << conns.size() << endl;
+  for (auto c: conns) {
+    cout << *c << endl;
+  }
+  cout << "Number of connections: " <<  conns.size() << endl;
+  cout << "Number of resets: " <<  resets << endl;
   return 0;
 }

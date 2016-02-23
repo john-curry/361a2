@@ -47,15 +47,18 @@ class packet {
     int size();
     int data_offset();
     int window_size();
+    time_t ts_sec() const;
+    time_t ts_milli() const;
     ustring get_data() const;
+    unsigned int data_size() const;
   private:
     ustring p_string; // string varient of the packet
     ustring data; // string varient of the data
     unsigned int capture_length; // length of packet
+    unsigned int d_size; // length of packet
     std::string saddr; // ip addresses
     std::string daddr;
     l_short_bit flags;
-    //u_char flags; // tcp flags
     u_short sport; // port numbers
     u_short dport;
     u_short win; // window size
@@ -63,7 +66,9 @@ class packet {
     tcp_seq seq_num;
     u_char ip_hdr_len;
     u_char tcp_hdr_len;
-    bool completed; // flag is set of packet is not malformed
+    time_t time_stamp_sec;
+    suseconds_t time_stamp_milli;
+    bool completed = false; // flag is set of packet is not malformed
     bool has_data;
     bool too_short(unsigned int length); // packet length check
 };
