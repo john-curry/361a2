@@ -44,9 +44,9 @@ class packet {
     u_short dst_port() const;
     std::string src_addr() const;
     std::string dst_addr() const;
+    u_short window_size();
     int size();
     int data_offset();
-    int window_size();
     time_t ts_sec() const;
     time_t ts_milli() const;
     ustring get_data() const;

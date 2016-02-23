@@ -53,8 +53,8 @@ packet::packet(const u_char * p, struct timeval ts, unsigned int cap_len) {
         this->dport   = short_swap(mtcp->th_dport); 
         this->ack_num = short_swap(mtcp->th_ack);
         this->seq_num = short_swap(mtcp->th_seq);
+        this->win     = short_swap(mtcp->th_win);
         this->flags   = std::bitset<8>((int)mtcp->th_flags);
-
         // jump over the tcp header
         p += tcp_header_length;
         cap_len -= tcp_header_length;
@@ -137,6 +137,10 @@ suseconds_t packet::ts_milli() const {
 
 unsigned int packet::data_size() const { 
   return this->d_size;
+}
+
+u_short packet::window_size() {
+  return this->win;
 }
 
 std::ostream& operator<<(std::ostream& os, const packet& p) {

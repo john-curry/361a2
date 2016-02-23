@@ -1,4 +1,5 @@
 #include "connection.h"
+#include "connections.h"
 #include "packet.h"
 #include <cassert>
 #include <pcap/pcap.h>
@@ -31,35 +32,23 @@ int main(int argc, char **argv) {
     cout << "Could not install filter: " << filter_exp << pcap_geterr(pcap) << endl;
   }
   
-  vector<connection*> conns;
-  int resets = 0;
-  //connection::capture_start = -1;
+  connections conns;
 
   while ((mpacket = pcap_next(pcap, &header)) != NULL) {
     auto new_packet = packet(mpacket, header.ts, header.caplen);
 
-    if (global_hack::capture_start < 0) {
-      global_hack::capture_start = 
-        new_packet.ts_milli() + new_packet.ts_sec()*1000000;
+    if (conns.empty()) {
+        conns.start_time(new_packet.ts_milli() + new_packet.ts_sec()*1000000);
     }
 
     if (new_packet.syn() && !new_packet.ack()) {
-      conns.push_back(new connection(new_packet));
+      conns.add_connection(new connection(new_packet));
     } else if (new_packet.rst()) {
-      resets++;
-      conns.push_back(new connection(new_packet));  
+      conns.add_connection(new connection(new_packet));  
     } else {
-      for (auto c: conns) {
-        if (c->check_packet(new_packet)) {
-          c->recv_packet(new_packet);
-        }
-      }
+      conns.recv_packet(new_packet);
     }
   }
-  for (auto c: conns) {
-    cout << *c << endl;
-  }
-  cout << "Number of connections: " <<  conns.size() << endl;
-  cout << "Number of resets: " <<  resets << endl;
+  cout << conns << endl;
   return 0;
 }

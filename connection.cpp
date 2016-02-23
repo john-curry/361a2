@@ -3,10 +3,11 @@
 #include <cassert>
 
 connection::connection(packet p) {
-  this->src_addr   = p.src_addr(); 
-  this->dst_addr   = p.dst_addr();
-  this->src_port   = p.src_port(); 
-  this->dst_port   = p.dst_port();
+  this->src_addr         = p.src_addr(); 
+  this->dst_addr         = p.dst_addr();
+  this->src_port         = p.src_port(); 
+  this->dst_port         = p.dst_port();
+  this->connection_reset = p.rst();
   this->start_time = p.ts_milli() + p.ts_sec()*1000000;
   this->change_state(std::shared_ptr<s0f0>(new s0f0));
   this->recv_packet(p);
@@ -27,7 +28,6 @@ bool connection::check_packet(packet p) {
     &&p.src_port() == this->dst_port
     &&p.dst_port() == this->src_port)
   { return true; }
-
   return false;
 }
 
@@ -36,6 +36,7 @@ void connection::recv_packet(packet p) {
   assert(this->check_packet(p));
   this->packet_num++;
   this->byte_total += p.data_size();
+  this->window_sizes.push_back(p.window_size());
   if (this->src_to_dst(p)) {
     this->packet_src_to_dst_num++;
     this->byte_src_to_dst_num += p.data_size();
@@ -74,23 +75,30 @@ bool connection::dst_to_src(packet p) {
       && p.src_addr() == this->dst_addr;
 }
 
-void connection::set_end_time(time_t t) {
+void connection::set_end_time(suseconds_t t) {
   this->end_time = t;
 }
 
-float connection::start() const {
-  return (float)(this->start_time - global_hack::capture_start)/((float)(1000000));
+float connection::start() {
+  return (float)(this->start_time - this->beginning)/((float)(1000000));
 }
 
-float connection::end() const {
-  return (float)(this->end_time - global_hack::capture_start)/((float)(1000000));
+float connection::end() {
+  return (float)(this->end_time - this->beginning)/((float)(1000000));
 }
 
-float connection::duration() const {
-  return (float)(this->end_time - this->start_time - global_hack::capture_start)/((float)(1000000));
+float connection::duration() {
+  return (float)(this->end_time - this->start_time)/((float)(1000000));
+}
+void connection::configure_timestamp(suseconds_t begin) {
+  this->beginning = begin;
 }
 
-std::ostream& operator<<(std::ostream& os, const connection& c) {
+bool connection::reseted() { return this->connection_reset; }
+
+std::string connection::state_name() { return state->name(); }
+
+std::ostream& operator<<(std::ostream& os, connection& c) {
   using namespace std;
   os << " Source Address: "          << c.src_addr                      << endl
      << " Destination Address: "     << c.dst_addr                      << endl
