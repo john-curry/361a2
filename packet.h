@@ -20,6 +20,7 @@ typedef std::bitset<8> l_short_bit;
 class packet { 
   friend std::ostream& operator<<(std::ostream& os, const packet& p);
   public:
+    packet() { } // needed for use in std::map
     packet(const u_char * p, struct timeval ts, unsigned int cap_len);
     bool syn() const;
     bool fin() const;
@@ -36,7 +37,8 @@ class packet {
     int size();
     int data_offset();
     time_t ts_sec() const;
-    time_t ts_milli() const;
+    suseconds_t ts_milli() const;
+    suseconds_t ts()  const; 
     ustring get_data() const;
     unsigned int data_size() const;
   private:

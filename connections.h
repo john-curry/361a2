@@ -54,6 +54,16 @@ class connections {
      return ret;
    };
 
+   std::vector<suseconds_t> rtts() {
+     using namespace std;
+     auto comp = this->complete_connections();
+     std::vector<suseconds_t> ret;
+     for (auto i : comp) {
+       ret.insert(ret.end(), i->rtts.begin(), i->rtts.end());
+     }
+     return ret;
+   };
+
    std::vector<u_short> windows() {
      using namespace std;
      auto comp = this->complete_connections();
@@ -93,6 +103,28 @@ class connections {
         ret += i;
       }
       return ret/t.size();
+   }
+
+   double min_rtt() {
+     using namespace std;
+     auto p = this->rtts();
+     return (double)p[distance(p.begin(), min_element(p.begin(), p.end()))]/1000000.0;
+   }
+
+   double max_rtt() {
+     using namespace std;
+     auto p = this->rtts();
+     return (double)p[distance(p.begin(), max_element(p.begin(), p.end()))]/1000000.0;
+   }
+
+   float mean_rtt() {
+     auto t = this->rtts();
+      float ret = 0;
+      for (auto i : t) {
+        float secs = (float)i / 1000000.0;
+        ret += secs;
+      }
+      return (float)ret/(float)t.size();
    }
 
    int min_packet() {
@@ -142,7 +174,7 @@ std::ostream& operator<<(std::ostream& os, connections& p) {
   for (auto c: p.conns) {
     os << *c << std::endl;
   }
-  os << "Complete TCP connections: " << endl
+  os << "Complete TCP connections: " << endl << endl
      << "Total number of complete connections: " << p.complete_size() << endl
      << "Number of reset TCP connections: "      << p.resets << endl
      << "Number of TCP connection that were still open when the trace capture ended: " << p.incomplete_size() << endl << endl
@@ -155,6 +187,9 @@ std::ostream& operator<<(std::ostream& os, connections& p) {
      << "Minimum window size: " << p.min_window() << endl
      << "Mean window size: " << p.mean_window() << endl
      << "Max window size: " << p.max_window() << endl << endl
+     << "Minimum RTT value: " << p.min_rtt() << endl
+     << "Mean RTT value: " << p.mean_rtt() << endl
+     << "Max RTT value: " << p.max_rtt() << endl << endl
      ;
   return os;
 }

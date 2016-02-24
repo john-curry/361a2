@@ -136,6 +136,10 @@ suseconds_t packet::ts_milli() const {
   return time_stamp_milli;
 }
 
+suseconds_t packet::ts() const {
+  return this->ts_milli() + this->ts_sec()*1000000;
+}
+
 unsigned int packet::data_size() const { 
   return this->d_size;
 }

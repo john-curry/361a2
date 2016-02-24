@@ -5,6 +5,7 @@
 #include <string>
 #include <memory>
 #include <cassert>
+#include <map>
 #include "packet.h"
 #include "state.h"
 
@@ -30,7 +31,9 @@ class connection {
     float end();
     float duration();
     void configure_timestamp(suseconds_t);
-
+    void do_rtt_calculation(packet);
+    void do_byte_calculation(packet);
+    void do_packet_calculation(packet);
     std::string state_name();
   private:
     // start state with no syn and no fin
@@ -49,10 +52,14 @@ class connection {
     tcp_seq seq_num = 0;
     tcp_seq nxt_ack = 0;
     tcp_seq ack_num = 0;
+    suseconds_t rtt_t0;
     std::vector<u_short> window_sizes;
+    std::vector<suseconds_t> rtts;
+    std::map<tcp_seq, packet> packets; // a packet is located at the ack number it is waiting for
     suseconds_t beginning;
-    std::shared_ptr<connection_state> state;// = std::shared_ptr<s0f0>(new s0f0);
+    std::shared_ptr<connection_state> state;
     bool complete = false;
     bool connection_reset = false;
+    bool fin_set = false;
 };
 #endif

@@ -35,19 +35,13 @@ void connection::recv_packet(packet p) {
   using namespace std;
   assert(this->check_packet(p));
 
-  this->packet_num++;
-  this->byte_total += p.data_size();
   this->window_sizes.push_back(p.window_size());
 
-  if (this->src_to_dst(p)) {
-    this->packet_src_to_dst_num++;
-    this->byte_src_to_dst_num += p.data_size();
-  }
+  this->do_packet_calculation(p);
 
-  if (this->dst_to_src(p)) {
-    this->packet_dst_to_src_num++;
-    this->byte_dst_to_src_num += p.data_size();
-  }
+  this->do_byte_calculation(p);
+
+  this->do_rtt_calculation(p);
 
   if (p.rst()) {
     this->connection_reset = true;
@@ -55,30 +49,68 @@ void connection::recv_packet(packet p) {
   } 
 
   this->state->recv_packet(p, this);
+}
 
-  // do RTT calculations
+void connection::do_rtt_calculation(packet p) {
   if (this->src_to_dst(p)) {
     if (p.syn() && !p.ack()) {
-      cout << "Syn1: " << p << endl;
       this->seq_num = p.seq_number();
       this->nxt_ack = p.seq_number() + 1;
+      packets[this->nxt_ack] = p;
+    }
+    if (p.ack() && !p.syn()) {
+      this->seq_num = p.seq_number();
+      this->nxt_ack = p.seq_number() + p.data_size();
+      //packets[this->nxt_ack] = p;
+    }
+    if (p.fin()) {
+      this->fin_set = true;
+      //this->rtt_t0 = p.ts();
     }
   }
+  
   if (this->dst_to_src(p)) {
+    if (p.ack() && p.fin()) {
+      if (this->fin_set) {
+        //this->rtts.push_back(p.ts() - this->rtt_t0);
+      }
+    }
     if (p.syn() && p.ack()) {
-        this->ack_num = p.ack_number();
-        cout << "Syn2: " << p << endl;
-      if (p.ack_number() == (this->seq_num + 1)) {
-        // calculate rtt for first packet
+      auto it = packets.find(p.ack_number());
+      if (it != packets.end()) {
+        this->rtts.push_back(p.ts() - it->second.ts());
+      }
+    }
+    if (p.ack() && !p.syn()) {
+      auto it = packets.find(p.ack_number());
+      if (it != packets.end()) {
+        //this->rtts.push_back(p.ts() - it->second.ts());
       }
     }
   }
-    
-  // for every packet i need to store its seq number and timestamp
-  // when i recieve the appropriate ack number
-  // calculate the rtt
 }
 
+void connection::do_byte_calculation(packet p) {
+  this->byte_total += p.data_size();
+  if (this->src_to_dst(p)) {
+    this->byte_src_to_dst_num += p.data_size();
+  }
+  if (this->dst_to_src(p)) {
+    this->byte_dst_to_src_num += p.data_size();
+  }
+}
+
+void connection::do_packet_calculation(packet p) {
+  this->packet_num++;
+
+  if (this->src_to_dst(p)) {
+    this->packet_src_to_dst_num++;
+  }
+
+  if (this->dst_to_src(p)) {
+    this->packet_dst_to_src_num++;
+  }
+}
 bool connection::is_completed() { return this->complete; }
 
 void connection::set_completed(bool c) { this->complete = c; }
