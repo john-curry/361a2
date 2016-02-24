@@ -1,5 +1,6 @@
 #include "packet.h"
 #include <cassert>
+#include <endian.h>
 packet::packet(const u_char * p, struct timeval ts, unsigned int cap_len) {
   using namespace std;
 
@@ -41,18 +42,18 @@ packet::packet(const u_char * p, struct timeval ts, unsigned int cap_len) {
       cap_len -= ip_header_length;
       
       mtcp = (struct tcphdr*)p;     
-      tcp_header_length = mtcp->th_off * 4; // might be wrong
+      tcp_header_length = mtcp->th_off * 4;
       this->tcp_hdr_len = tcp_header_length;
 
       if (too_short(tcp_header_length)) {
         cerr << "Captured packet too small: tcphdr." << endl;
       } else {
         // rip data out of the tcp header
-        // TODO: this is converting big endian to little endian. test this in the lab to see if it still needs swapping
-        this->sport   = short_swap(mtcp->th_sport); 
-        this->dport   = short_swap(mtcp->th_dport); 
-        this->ack_num = short_swap(mtcp->th_ack);
-        this->seq_num = short_swap(mtcp->th_seq);
+        // TODO: this is converting big endian to little endian.
+        this->sport   = short_swap(mtcp->th_sport);
+        this->dport   = short_swap(mtcp->th_dport);
+        this->ack_num = be32toh(mtcp->th_ack);
+        this->seq_num = be32toh(mtcp->th_seq);
         this->win     = short_swap(mtcp->th_win);
         this->flags   = std::bitset<8>((int)mtcp->th_flags);
         // jump over the tcp header
@@ -146,8 +147,8 @@ u_short packet::window_size() {
 std::ostream& operator<<(std::ostream& os, const packet& p) {
   os << " src_addr: " << p.src_addr()
      << " dst_addr: " << p.dst_addr()
-     << " ack_num: " << p.ack_num
-     << " seq_num: " << p.seq_num
+     << " ack_num: " << (p.ack_num)
+     << " seq_num: " << (p.seq_num)
      << " ack: " << p.ack()
      << " syn: " << p.syn()
      << " has data: " << p.has_data;

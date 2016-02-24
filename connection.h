@@ -30,6 +30,7 @@ class connection {
     float end();
     float duration();
     void configure_timestamp(suseconds_t);
+
     std::string state_name();
   private:
     // start state with no syn and no fin
@@ -47,6 +48,7 @@ class connection {
     int byte_total = 0;
     tcp_seq seq_num = 0;
     tcp_seq nxt_ack = 0;
+    tcp_seq ack_num = 0;
     std::vector<u_short> window_sizes;
     suseconds_t beginning;
     std::shared_ptr<connection_state> state;// = std::shared_ptr<s0f0>(new s0f0);

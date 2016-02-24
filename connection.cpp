@@ -43,6 +43,7 @@ void connection::recv_packet(packet p) {
     this->packet_src_to_dst_num++;
     this->byte_src_to_dst_num += p.data_size();
   }
+
   if (this->dst_to_src(p)) {
     this->packet_dst_to_src_num++;
     this->byte_dst_to_src_num += p.data_size();
@@ -54,14 +55,22 @@ void connection::recv_packet(packet p) {
   } 
 
   this->state->recv_packet(p, this);
+
   // do RTT calculations
-  if (p.syn() && !p.ack() && this->src_to_dst(p)) {
-    this->seq_num = p.seq_number();
+  if (this->src_to_dst(p)) {
+    if (p.syn() && !p.ack()) {
+      cout << "Syn1: " << p << endl;
+      this->seq_num = p.seq_number();
+      this->nxt_ack = p.seq_number() + 1;
+    }
   }
-  if (p.syn() && p.ack() && this->dst_to_src(p)) {
-    if (p.ack_number() == (this->seq_num + 1)) {
-      // calculate the rtt
-      cout << "We got the right ack!!" << endl;
+  if (this->dst_to_src(p)) {
+    if (p.syn() && p.ack()) {
+        this->ack_num = p.ack_number();
+        cout << "Syn2: " << p << endl;
+      if (p.ack_number() == (this->seq_num + 1)) {
+        // calculate rtt for first packet
+      }
     }
   }
     
@@ -122,6 +131,9 @@ std::ostream& operator<<(std::ostream& os, connection& c) {
      << " Source Port: "             << c.src_port                      << endl
      << " Destination port: "        << c.dst_port                      << endl
      << " Status: "                  << *c.state                        << endl
+     << " seq_num: "                 << c.seq_num                      << endl
+     << " ack_num: "                 << c.ack_num                      << endl
+     << " nxt_ack: "                 << c.nxt_ack                      << endl
   ;
   if (c.complete) {
    os<< " Start time: "              << c.start()                       << endl

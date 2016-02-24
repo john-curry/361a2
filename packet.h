@@ -1,6 +1,5 @@
 #ifndef PACKET_H
-#define PACKET_H
-#include <pcap/pcap.h>
+#define PACKET_H #include <pcap/pcap.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
