@@ -10,30 +10,25 @@ connection::connection(packet p) {
   this->connection_reset = p.rst();
   this->start_time = p.ts_milli() + p.ts_sec()*1000000;
   this->change_state(std::shared_ptr<s0f0>(new s0f0));
-  this->recv_packet(p);
+  //this->recv_packet(p);
 }
 
 bool connection::check_packet(packet p) {
-  //if (p.syn() && !p.ack()) return false;
   // to server
-  if (p.src_addr() == this->src_addr 
-    &&p.dst_addr() == this->dst_addr
-    &&p.src_port() == this->src_port
-    &&p.dst_port() == this->dst_port)
+  if (this->src_to_dst(p)) 
   { return true; }
 
   // to client
-  if (p.src_addr() == this->dst_addr 
-    &&p.dst_addr() == this->src_addr
-    &&p.src_port() == this->dst_port
-    &&p.dst_port() == this->src_port)
+  if (this->dst_to_src(p))
   { return true; }
+
   return false;
 }
 
 void connection::recv_packet(packet p) {
   using namespace std;
   assert(this->check_packet(p));
+  assert(this->dst_to_src(p) || this->src_to_dst(p));
 
   this->window_sizes.push_back(p.window_size());
 
@@ -52,6 +47,7 @@ void connection::recv_packet(packet p) {
 }
 
 void connection::do_rtt_calculation(packet p) {
+
   if (this->src_to_dst(p)) {
     if (p.syn() && !p.ack()) {
       this->seq_num = p.seq_number();
@@ -61,18 +57,18 @@ void connection::do_rtt_calculation(packet p) {
     if (p.ack() && !p.syn()) {
       this->seq_num = p.seq_number();
       this->nxt_ack = p.seq_number() + p.data_size();
-      //packets[this->nxt_ack] = p;
+      packets[this->nxt_ack] = p;
     }
     if (p.fin()) {
       this->fin_set = true;
-      //this->rtt_t0 = p.ts();
+      this->rtt_t0 = p.ts();
     }
   }
   
   if (this->dst_to_src(p)) {
     if (p.ack() && p.fin()) {
       if (this->fin_set) {
-        //this->rtts.push_back(p.ts() - this->rtt_t0);
+        this->rtts.push_back(p.ts() - this->rtt_t0);
       }
     }
     if (p.syn() && p.ack()) {
@@ -84,7 +80,7 @@ void connection::do_rtt_calculation(packet p) {
     if (p.ack() && !p.syn()) {
       auto it = packets.find(p.ack_number());
       if (it != packets.end()) {
-        //this->rtts.push_back(p.ts() - it->second.ts());
+        this->rtts.push_back(p.ts() - it->second.ts());
       }
     }
   }
@@ -109,8 +105,13 @@ void connection::do_packet_calculation(packet p) {
 
   if (this->dst_to_src(p)) {
     this->packet_dst_to_src_num++;
+  } else {
+    //std::cout << "Packet: " << p << std::endl 
+    // <<  "Does not belong to connection: " << *this << std::endl;
+    //throw std::runtime_error("Packet does not belong to this connection");
   }
 }
+
 bool connection::is_completed() { return this->complete; }
 
 void connection::set_completed(bool c) { this->complete = c; }
@@ -124,13 +125,15 @@ void connection::change_state(std::shared_ptr<connection_state> s) {
 }
 
 bool connection::src_to_dst(packet p) {
-  return p.src_addr() == this->src_addr
-      && p.dst_addr() == this->dst_addr;
+  bool addr = (p.src_addr() == this->src_addr) && (p.dst_addr() == this->dst_addr);
+  bool port = (p.src_port() == this->src_port) && (p.dst_port() == this->dst_port);
+  return addr && port;
 }
 
 bool connection::dst_to_src(packet p) {
-  return p.dst_addr() == this->src_addr
-      && p.src_addr() == this->dst_addr;
+  bool addr = (p.dst_addr() == this->src_addr) && (p.src_addr() == this->dst_addr);
+  bool port = (p.dst_port() == this->src_port) && (p.src_port() == this->dst_port);
+  return addr && port;
 }
 
 void connection::set_end_time(suseconds_t t) {
@@ -163,9 +166,6 @@ std::ostream& operator<<(std::ostream& os, connection& c) {
      << " Source Port: "             << c.src_port                      << endl
      << " Destination port: "        << c.dst_port                      << endl
      << " Status: "                  << *c.state                        << endl
-     << " seq_num: "                 << c.seq_num                      << endl
-     << " ack_num: "                 << c.ack_num                      << endl
-     << " nxt_ack: "                 << c.nxt_ack                      << endl
   ;
   if (c.complete) {
    os<< " Start time: "              << c.start()                       << endl

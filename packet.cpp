@@ -151,6 +151,8 @@ u_short packet::window_size() {
 std::ostream& operator<<(std::ostream& os, const packet& p) {
   os << " src_addr: " << p.src_addr()
      << " dst_addr: " << p.dst_addr()
+     << " src_port: " << p.src_port()
+     << " dst_port: " << p.dst_port()
      << " ack_num: " << (p.ack_num)
      << " seq_num: " << (p.seq_num)
      << " ack: " << p.ack()

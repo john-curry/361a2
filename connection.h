@@ -17,8 +17,7 @@ class connection {
     connection(packet p);
 
     void change_state(std::shared_ptr<connection_state> s);
-    bool check_packet(packet p);
-    void recv_packet(packet p);
+    bool check_packet(packet p); void recv_packet(packet p);
     bool is_completed();
     void set_completed(bool);
     bool reseted();

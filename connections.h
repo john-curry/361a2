@@ -21,8 +21,10 @@ class connections {
       c->configure_timestamp(this->beginning);
       resets = c->reseted() ? resets + 1 : resets;
     };
+
     bool empty() { return conns.size() == 0 ? true : false; };
     void start_time(suseconds_t b) { this->beginning = b; };
+
     void recv_packet(packet p) {
       for (auto c: conns) {
         if (c->check_packet(p)) {
@@ -171,13 +173,29 @@ class connections {
 
 std::ostream& operator<<(std::ostream& os, connections& p) {
   using namespace std;
-  for (auto c: p.conns) {
-    os << *c << std::endl;
+
+  os << "A) Total number of connections: " << p.conns.size() << endl << endl;
+  os << "B) Connection details: " << endl << endl;
+  for (auto i = 0; i < p.conns.size(); ++i) {
+    os << "Connection " << (i + 1) << ":" << endl
+       << *(p.conns[i]) << endl
+       << "END" << endl 
+       << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl 
+       ;
+    if (i != p.conns.size() -1) {
+     os<< "." << endl 
+       << "." << endl 
+       << "." << endl
+       << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl
+       ;
+    }
   }
-  os << "Complete TCP connections: " << endl << endl
+  os << "C) General: " << endl << endl
+     << "Complete TCP connections: " << endl << endl
      << "Total number of complete connections: " << p.complete_size() << endl
-     << "Number of reset TCP connections: "      << p.resets << endl
+     << "Number of reset TCP connections: "      << p.resets << endl << endl
      << "Number of TCP connection that were still open when the trace capture ended: " << p.incomplete_size() << endl << endl
+     << "D) Complete TCP Connections: " << endl << endl
      << "Minimum time durations: " << p.min_time() << endl
      << "Mean time durations: " << p.mean_time() << endl
      << "Max time durations: " << p.max_time() << endl << endl

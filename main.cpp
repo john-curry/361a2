@@ -34,7 +34,6 @@ int main(int argc, char **argv) {
 
   while ((mpacket = pcap_next(pcap, &header)) != NULL) {
     auto new_packet = packet(mpacket, header.ts, header.caplen);
-    //cout << new_packet << endl; 
 
     if (conns.empty()) {
         conns.start_time(new_packet.ts_milli() + new_packet.ts_sec()*1000000);
@@ -42,11 +41,14 @@ int main(int argc, char **argv) {
 
     if (new_packet.syn() && !new_packet.ack()) {
       conns.add_connection(new connection(new_packet));
-    } else if (new_packet.rst()) {
-      conns.add_connection(new connection(new_packet));  
-    } else {
-      conns.recv_packet(new_packet);
     }
+
+    if (new_packet.rst()) {
+      conns.add_connection(new connection(new_packet));  
+    } 
+
+    conns.recv_packet(new_packet);
+   
   }
   cout << conns << endl;
   return 0;
