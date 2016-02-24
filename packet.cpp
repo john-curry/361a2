@@ -144,17 +144,16 @@ u_short packet::window_size() {
 }
 
 std::ostream& operator<<(std::ostream& os, const packet& p) {
-  os << " src_port: " << p.src_port() 
-     << " dst_port: " << p.dst_port() 
-     << " src_addr: " << p.src_addr() 
+  os << " src_addr: " << p.src_addr()
      << " dst_addr: " << p.dst_addr()
      << " ack_num: " << p.ack_num
      << " seq_num: " << p.seq_num
      << " ack: " << p.ack()
      << " syn: " << p.syn()
-     << " fin: " << p.fin()
-     << " rst: " << p.rst()
-     << " completed: " << p.complete();
+     << " has data: " << p.has_data;
+     if (p.has_data) {
+       os << " data size: " << p.d_size;
+     }
   return os;
 }
 

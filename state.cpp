@@ -9,7 +9,6 @@ void reset::recv_packet( packet p, connection * c) {
 std::string s0f0::name() const { return std::string("s0f0"); }
 void s0f0::recv_packet( packet p, connection * c) {
   using namespace std;
-
   assert(!c->is_completed());
   if(p.fin() && p.syn()) {
     c->change_state(shared_ptr<s1f1>(new s1f1));

@@ -12,8 +12,6 @@ int main(int argc, char **argv) {
   struct pcap_pkthdr header;
   struct bpf_program fp;
   char filter_exp[] = "tcp and ip";
-  //bpf_u_int32 mask;   /* The netmask of our sniffing device */
-  //bpf_u_int32 net;   /* The IP of our sniffing device */
   
   if (argc < 1) {
     cout << "Not enough arguements." << endl;
@@ -36,6 +34,7 @@ int main(int argc, char **argv) {
 
   while ((mpacket = pcap_next(pcap, &header)) != NULL) {
     auto new_packet = packet(mpacket, header.ts, header.caplen);
+    //cout << new_packet << endl; 
 
     if (conns.empty()) {
         conns.start_time(new_packet.ts_milli() + new_packet.ts_sec()*1000000);

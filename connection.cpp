@@ -34,9 +34,11 @@ bool connection::check_packet(packet p) {
 void connection::recv_packet(packet p) {
   using namespace std;
   assert(this->check_packet(p));
+
   this->packet_num++;
   this->byte_total += p.data_size();
   this->window_sizes.push_back(p.window_size());
+
   if (this->src_to_dst(p)) {
     this->packet_src_to_dst_num++;
     this->byte_src_to_dst_num += p.data_size();
@@ -45,12 +47,27 @@ void connection::recv_packet(packet p) {
     this->packet_dst_to_src_num++;
     this->byte_dst_to_src_num += p.data_size();
   }
+
   if (p.rst()) {
     this->connection_reset = true;
     this->change_state(std::shared_ptr<reset>(new reset));
-  } else {
-    this->state->recv_packet(p, this);
+  } 
+
+  this->state->recv_packet(p, this);
+  // do RTT calculations
+  if (p.syn() && !p.ack() && this->src_to_dst(p)) {
+    this->seq_num = p.seq_number();
   }
+  if (p.syn() && p.ack() && this->dst_to_src(p)) {
+    if (p.ack_number() == (this->seq_num + 1)) {
+      // calculate the rtt
+      cout << "We got the right ack!!" << endl;
+    }
+  }
+    
+  // for every packet i need to store its seq number and timestamp
+  // when i recieve the appropriate ack number
+  // calculate the rtt
 }
 
 bool connection::is_completed() { return this->complete; }

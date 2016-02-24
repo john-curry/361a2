@@ -1,0 +1,23 @@
+Author: John Curry
+Student #: V00755720
+
+Title: 361 Assignement 2
+
+build and run:
+
+  make run
+   
+connections.h:
+  This header contains a connection management class that controls the creation and running of the various connections. It also creates and dumps the various statistics associated with with all the connections.
+
+connection.h/connection.cpp:
+  This is the object that encapsulates all the data that has to do with the connetion. It also deals with getting various data from packets.
+
+state.h/state.cpp:
+  A (semi) simple finite state machine for the connection implemented as a coommand pattern.
+
+packet.h/packet.cpp:
+  Deals with parsing the raw packet that is returned from the pcap library.
+
+output:
+  All the output comes from overloading the << operator. The definition for these methods are at the bottom of the various cpp files and at the end of connections.h.

@@ -45,6 +45,8 @@ class connection {
     int byte_src_to_dst_num = 0;
     int byte_dst_to_src_num = 0;
     int byte_total = 0;
+    tcp_seq seq_num = 0;
+    tcp_seq nxt_ack = 0;
     std::vector<u_short> window_sizes;
     suseconds_t beginning;
     std::shared_ptr<connection_state> state;// = std::shared_ptr<s0f0>(new s0f0);

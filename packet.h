@@ -18,17 +18,6 @@ typedef std::basic_string<u_char> ustring;
 typedef std::bitset<4> short_bit;
 typedef std::bitset<8> l_short_bit;
 
-class bad_packet_error : public std::exception {
-  public:
-    bad_packet_error(const char * m) { method += std::string(m); }
-    
-    char const *what() const noexcept{
-      return method.c_str();
-    }
-  private:
-    std::string method = "Malformed_packet: " ;
-};
-
 class packet { 
   friend std::ostream& operator<<(std::ostream& os, const packet& p);
   public:
@@ -72,8 +61,18 @@ class packet {
     bool has_data;
     bool too_short(unsigned int length); // packet length check
 };
+
+class bad_packet_error : public std::exception {
+  public:
+    bad_packet_error(const char * m) { method += std::string(m); }
+    
+    char const *what() const noexcept{
+      return method.c_str();
+    }
+  private:
+    std::string method = "Malformed_packet: " ;
+};
 std::ostream& operator<<(std::ostream& os, const packet& p);
 void ConvertToBinary(int n);
-
 u_short short_swap( u_short s );
 #endif
