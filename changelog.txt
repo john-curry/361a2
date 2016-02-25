@@ -1,0 +1,5 @@
+Fixed lost packet problem
+added rtt from dst to src
+incomplete connections are now connections that did not recieve and fins
+fixed bytes to src being equal to bytes to dst
+check_packet was failing for packets that were already checked

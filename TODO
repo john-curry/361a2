@@ -1,8 +1,4 @@
 Data bytes are off
-Rtt dst to src
 mean window size
-packets off by one
-incomplete connections are connections that have no fin
-bytes sent is same a bytes recieved
 some packets are failing check_packet check
 

@@ -27,7 +27,7 @@ packet::packet(const u_char * p, struct timeval ts, unsigned int cap_len) {
     // rip addresses out of ip header    
     this->saddr = string(inet_ntoa(mip->ip_src));
     this->daddr = string(inet_ntoa(mip->ip_dst));
-
+    assert(this->saddr != this->daddr);
     ip_header_length = mip->ip_hl * 4;
 
     assert(ip_header_length >= 20 && ip_header_length <= 60);
@@ -56,18 +56,16 @@ packet::packet(const u_char * p, struct timeval ts, unsigned int cap_len) {
         this->seq_num = be32toh(mtcp->th_seq);
         this->win     = short_swap(mtcp->th_win);
         this->flags   = std::bitset<8>((int)mtcp->th_flags);
+
         // jump over the tcp header
         p += tcp_header_length;
         cap_len -= tcp_header_length;
-        // if there is data, copy it over
-        if (cap_len == 0) {
-          this->has_data = false;
-        } else {
-          this->has_data = true;
-          this->data = ustring(data);
-          this->d_size = cap_len;
-        }
-        // packet is not malformed in any way
+
+        this->d_size = cap_len;
+
+        this->data = ustring((u_char*)p);
+        //assert(d_size == this->data.length());
+        //cout << this->data.c_str() << endl;
         this->completed = true;
       }
     }
@@ -151,15 +149,16 @@ u_short packet::window_size() {
 std::ostream& operator<<(std::ostream& os, const packet& p) {
   os << " src_addr: " << p.src_addr()
      << " dst_addr: " << p.dst_addr()
-     << " src_port: " << p.src_port()
-     << " dst_port: " << p.dst_port()
-     << " ack_num: " << (p.ack_num)
-     << " seq_num: " << (p.seq_num)
-     << " ack: " << p.ack()
-     << " syn: " << p.syn()
+     //<< " src_port: " << p.src_port()
+     //<< " dst_port: " << p.dst_port()
+     //<< " ack_num: " << (p.ack_num)
+     //<< " seq_num: " << (p.seq_num)
+     //<< " ack: " << p.ack()
+     //<< " syn: " << p.syn()
+     << " win size: " << p.win
      << " has data: " << p.has_data;
      if (p.has_data) {
-       os << " data size: " << p.d_size;
+       os << " data size: " << p.data_size();
      }
   return os;
 }

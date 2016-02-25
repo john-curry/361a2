@@ -45,16 +45,19 @@ class connection {
     int packet_src_to_dst_num = 0;
     int packet_dst_to_src_num = 0;
     int packet_num = 0;
+
     int byte_src_to_dst_num = 0;
     int byte_dst_to_src_num = 0;
     int byte_total = 0;
+
     tcp_seq seq_num = 0;
     tcp_seq nxt_ack = 0;
     tcp_seq ack_num = 0;
     suseconds_t rtt_t0;
     std::vector<u_short> window_sizes;
     std::vector<suseconds_t> rtts;
-    std::map<tcp_seq, packet> packets; // a packet is located at the ack number it is waiting for
+    std::map<tcp_seq, packet> src_packets; // a packet is located at the ack number it is waiting for
+    std::map<tcp_seq, packet> dst_packets; // a packet is located at the ack number it is waiting for
     suseconds_t beginning;
     std::shared_ptr<connection_state> state;
     bool complete = false;

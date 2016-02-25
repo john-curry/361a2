@@ -59,7 +59,7 @@ class packet {
     time_t time_stamp_sec;
     suseconds_t time_stamp_milli;
     bool completed = false; // flag is set of packet is not malformed
-    bool has_data;
+    bool has_data = true;
     bool too_short(unsigned int length); // packet length check
 };
 

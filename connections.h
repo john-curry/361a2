@@ -34,7 +34,17 @@ class connections {
     };
    std::vector<connection*> incomplete_connections() {
      std::vector<connection*> ret = conns;
-     ret.erase(std::remove_if(ret.begin(), ret.end(), is_complete), ret.end());
+      auto completed = [] (connection * c) {
+        auto name = c->state->name();
+        return name == "s0f1" || 
+               name == "s0f2" || 
+               name == "s1f1" || 
+               name == "s1f2" || 
+               name == "s2f1" ||
+               name == "s2f2"
+               ;
+      };
+     ret.erase(std::remove_if(ret.begin(), ret.end(), completed), ret.end());
      return ret;
    };
    std::vector<connection*> complete_connections() {

@@ -14,21 +14,13 @@ connection::connection(packet p) {
 }
 
 bool connection::check_packet(packet p) {
-  // to server
-  if (this->src_to_dst(p)) 
-  { return true; }
-
-  // to client
-  if (this->dst_to_src(p))
-  { return true; }
-
-  return false;
+  assert(!(this->src_to_dst(p) && this->dst_to_src(p)));
+  return this->src_to_dst(p) ^ this->dst_to_src(p);
 }
 
 void connection::recv_packet(packet p) {
   using namespace std;
   assert(this->check_packet(p));
-  assert(this->dst_to_src(p) || this->src_to_dst(p));
 
   this->window_sizes.push_back(p.window_size());
 
@@ -47,17 +39,28 @@ void connection::recv_packet(packet p) {
 }
 
 void connection::do_rtt_calculation(packet p) {
+  assert(this->check_packet(p));
 
   if (this->src_to_dst(p)) {
     if (p.syn() && !p.ack()) {
       this->seq_num = p.seq_number();
+      auto it = dst_packets.find(p.seq_number());
+      if (it != dst_packets.end()) {
+        dst_packets.erase(it);
+        this->rtts.push_back(p.ts() - it->second.ts());
+      }
       this->nxt_ack = p.seq_number() + 1;
-      packets[this->nxt_ack] = p;
+      src_packets[this->nxt_ack] = p;
     }
     if (p.ack() && !p.syn()) {
       this->seq_num = p.seq_number();
+      auto it = dst_packets.find(p.seq_number());
+      if (it != dst_packets.end()) {
+        dst_packets.erase(it);
+        this->rtts.push_back(p.ts() - it->second.ts());
+      }
       this->nxt_ack = p.seq_number() + p.data_size();
-      packets[this->nxt_ack] = p;
+      src_packets[this->nxt_ack] = p;
     }
     if (p.fin()) {
       this->fin_set = true;
@@ -72,44 +75,54 @@ void connection::do_rtt_calculation(packet p) {
       }
     }
     if (p.syn() && p.ack()) {
-      auto it = packets.find(p.ack_number());
-      if (it != packets.end()) {
+      auto it = src_packets.find(p.ack_number());
+      if (it != src_packets.end()) {
+        src_packets.erase(it);
         this->rtts.push_back(p.ts() - it->second.ts());
       }
+      dst_packets[p.ack_number()] = p;
     }
     if (p.ack() && !p.syn()) {
-      auto it = packets.find(p.ack_number());
-      if (it != packets.end()) {
+      auto it = src_packets.find(p.ack_number());
+      if (it != src_packets.end()) {
+        src_packets.erase(it);
         this->rtts.push_back(p.ts() - it->second.ts());
       }
+      dst_packets[p.ack_number()] = p;
     }
   }
 }
 
 void connection::do_byte_calculation(packet p) {
+  assert(this->check_packet(p));
+
   this->byte_total += p.data_size();
+
   if (this->src_to_dst(p)) {
     this->byte_src_to_dst_num += p.data_size();
+    return;
   }
   if (this->dst_to_src(p)) {
     this->byte_dst_to_src_num += p.data_size();
+    return;
   }
+  assert(false);
 }
 
 void connection::do_packet_calculation(packet p) {
+  assert(this->check_packet(p));
   this->packet_num++;
 
   if (this->src_to_dst(p)) {
     this->packet_src_to_dst_num++;
+    return;
   }
 
   if (this->dst_to_src(p)) {
     this->packet_dst_to_src_num++;
-  } else {
-    //std::cout << "Packet: " << p << std::endl 
-    // <<  "Does not belong to connection: " << *this << std::endl;
-    //throw std::runtime_error("Packet does not belong to this connection");
+    return;
   }
+  assert(false);
 }
 
 bool connection::is_completed() { return this->complete; }
@@ -174,7 +187,7 @@ std::ostream& operator<<(std::ostream& os, connection& c) {
      << " packets src to dst: "      << c.packet_src_to_dst_num         << endl
      << " packets dst to src: "      << c.packet_dst_to_src_num         << endl
      << " packets: "                 << c.packet_num                    << endl
-     << " data bytes src to dst: "   << c.byte_dst_to_src_num           << endl
+     << " data bytes src to dst: "   << c.byte_src_to_dst_num           << endl
      << " data bytes dst to src: "   << c.byte_dst_to_src_num           << endl
      << " data bytes total: "        << c.byte_total                    << endl
   ;

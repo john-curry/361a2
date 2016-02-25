@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
 
   while ((mpacket = pcap_next(pcap, &header)) != NULL) {
     auto new_packet = packet(mpacket, header.ts, header.caplen);
-
+    cout << new_packet << endl;
     if (conns.empty()) {
         conns.start_time(new_packet.ts_milli() + new_packet.ts_sec()*1000000);
     }
